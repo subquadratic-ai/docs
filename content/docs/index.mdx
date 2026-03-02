@@ -3,133 +3,87 @@ title: Aldea documentation
 description: Explore our docs, guides, and API reference to integrate Aldea
 ---
 
-Aldea is a fast, accurate speech-to-text API. Fully Deepgram-compatible: migrate with a two-line code change, or start fresh with our native iOS and Android SDKs.
+<HeroBanner />
 
 <Cards>
   <Card
-    title="🚀 Quickstart"
+    title="Quickstart"
     href="/docs/getting-started/quickstart"
-    description="Get your first transcription in under 5 minutes"
+    description="Get your first transcription in under 5 minutes."
+  />
+  <Card
+    title="Platform overview"
+    href="/docs/overview"
+    description="How Aldea works, supported models, and the Deepgram-compatible API."
   />
 </Cards>
 
----
-
-## Explore the docs
+## Build
 
 <Cards>
   <Card
-    title="Getting started"
-    href="/docs/getting-started/quickstart"
-    description="Create an API key, choose your integration path, and transcribe audio in minutes."
+    title="Set up a client"
+    href="/docs/integration/setup"
+    description="Install an SDK and configure it to connect to Aldea."
   />
   <Card
-    title="Concepts"
+    title="Transcribe a file"
+    href="/docs/integration/transcribe-file"
+    description="Send a local audio file and get a transcript back."
+  />
+  <Card
+    title="Transcribe a URL"
+    href="/docs/integration/transcribe-url"
+    description="Pass a publicly accessible URL for transcription."
+  />
+  <Card
+    title="Stream audio"
+    href="/docs/integration/streaming"
+    description="Open a WebSocket and get real-time partial results."
+  />
+  <Card
+    title="Browser & mobile"
+    href="/docs/integration/browser/setup"
+    description="In-browser capture, or native iOS and Android SDKs."
+  />
+  <Card
+    title="Migrate from Deepgram"
+    href="/docs/integration/migrate-from-deepgram"
+    description="Switch to Aldea with a two-line config change."
+  />
+</Cards>
+
+## Concepts
+
+<Cards>
+  <Card
+    title="How Aldea works"
     href="/docs/concepts/how-aldea-works"
-    description="Understand how Aldea works: pre-recorded vs streaming, diarization, smart formatting, and more."
+    description="Architecture, models, and the request lifecycle."
+  />
+  <Card
+    title="Transcription modes"
+    href="/docs/concepts/transcription-modes"
+    description="Pre-recorded vs streaming, and async callbacks."
+  />
+  <Card
+    title="Features"
+    href="/docs/concepts/speech-intelligence/language-detection"
+    description="Diarization, language detection, smart formatting, PII redaction, and more."
   />
 </Cards>
 
-## Integration examples
+## API reference & guides
 
 <Cards>
   <Card
-    title="Python"
-    href="/docs/integration/python/setup"
-    description="Transcribe files, URLs, or live audio with the Deepgram Python SDK or raw httpx."
-  />
-  <Card
-    title="Node.js"
-    href="/docs/integration/node/setup"
-    description="Use the Deepgram JS SDK or plain fetch to integrate in Node.js."
-  />
-  <Card
-    title="Go"
-    href="/docs/integration/go/setup"
-    description="Deepgram Go SDK or net/http: your choice."
-  />
-  <Card
-    title="Rust"
-    href="/docs/integration/rust/setup"
-    description="Integrate via the Deepgram Rust SDK or reqwest."
-  />
-  <Card
-    title="Browser JavaScript"
-    href="/docs/integration/browser-js/setup"
-    description="Live microphone transcription and file uploads directly in the browser."
-  />
-  <Card
-    title="Migrating from Deepgram"
-    href="/docs/integration/migrating-from-deepgram"
-    description="Switch to Aldea with a two-line code change: no SDK swap needed."
-  />
-</Cards>
-
-## Native SDKs
-
-<Cards>
-  <Card
-    title="iOS (Swift)"
-    href="/docs/integration/native-sdks/ios/installation"
-    description="First-party Swift SDK with SwiftUI sample app."
-  />
-  <Card
-    title="Android (Kotlin)"
-    href="/docs/integration/native-sdks/android/installation"
-    description="First-party Kotlin SDK with Gradle setup and demo app."
-  />
-</Cards>
-
-## API reference
-
-<Cards>
-  <Card
-    title="API overview"
+    title="API reference"
     href="/docs/api-reference/api-overview"
-    description="Endpoints, authentication, and request structure."
+    description="Endpoints, parameters, error codes, and authentication."
   />
   <Card
-    title="Pre-recorded API"
-    href="/docs/api-reference/pre-recorded"
-    description="POST /v1/listen for batch audio transcription."
-  />
-  <Card
-    title="Streaming API"
-    href="/docs/api-reference/streaming"
-    description="WebSocket /v1/listen for real-time transcription."
-  />
-  <Card
-    title="Parameters"
-    href="/docs/api-reference/parameters"
-    description="Complete reference for all query parameters."
-  />
-</Cards>
-
-## Guides & reference
-
-<Cards>
-  <Card
-    title="Best practices"
+    title="Guides"
     href="/docs/guides/best-practices"
-    description="Recommended patterns for using the Aldea STT API."
-  />
-  <Card
-    title="Audio quality tips"
-    href="/docs/guides/audio-quality-tips"
-    description="Optimize formats, sample rates, and noise handling."
-  />
-  <Card
-    title="Rate limits"
-    href="/docs/reference/rate-limits"
-    description="API rate limits, quotas, and usage guidelines."
-  />
-  <Card
-    title="Troubleshooting"
-    href="/docs/guides/troubleshooting"
-    description="Common issues and solutions."
+    description="Best practices, audio quality, latency optimization, and troubleshooting."
   />
 </Cards>
-
----
-
-New to Aldea? Start with the [Overview](/docs/overview) for a complete introduction to the platform.

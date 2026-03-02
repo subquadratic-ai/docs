@@ -7,7 +7,6 @@ export default function Layout({ children }: LayoutProps<"/docs">) {
     <DocsLayout
       tree={source.pageTree}
       {...baseOptions()}
-      tabMode="top"
       sidebar={{
         defaultOpenLevel: 2,
         collapsible: true,

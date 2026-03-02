@@ -1,4 +1,4 @@
 {
   "title": "Getting started",
-  "pages": ["choose-integration", "get-api-key","quickstart"]
+  "pages": ["get-api-key", "choose-integration", "quickstart"]
 }
