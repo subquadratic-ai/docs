@@ -16,12 +16,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     },
     h2: (props) => {
       const Comp = base.h2 ?? 'h2';
-      return (
-        <Comp
-          {...props}
-          className={cn('font-mono font-normal', props.className)}
-        />
-      );
+      return <Comp {...props} className={cn('font-serif', props.className)} />;
     },
     h3: (props) => {
       const Comp = base.h3 ?? 'h3';

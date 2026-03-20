@@ -15,13 +15,19 @@ export function baseOptions(): BaseLayoutProps {
       title: (
         <span className="flex items-center gap-2 font-semibold">
           <Image
-            src="/aldea-logo.jpg"
-            alt="Aldea"
-            width={24}
-            height={24}
-            className="rounded"
+            src="/subq-logo.png"
+            alt="SubQ"
+            width={64}
+            height={32}
+            className="rounded dark:hidden"
           />
-          Aldea
+          <Image
+            src="/subq-logo-dark.png"
+            alt="SubQ"
+            width={64}
+            height={32}
+            className="hidden rounded dark:block"
+          />
         </span>
       ),
       url: "/docs",
