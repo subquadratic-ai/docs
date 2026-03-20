@@ -64,7 +64,9 @@ Run it:
 python transcribe_url.py
 ```
 
-## Code walkthrough
+## How it works
+
+To transcribe from a URL, you follow three steps: download the audio, send it to the API, and extract the transcript from the response.
 
 1. **Download the audio.** `httpx.get()` fetches the audio file from the URL. The `follow_redirects=True` parameter handles HTTP redirects automatically. This is important for URLs from storage services that often redirect to a CDN. The `timeout=30.0` prevents the request from hanging on slow connections.
 
@@ -76,8 +78,6 @@ python transcribe_url.py
 The URL must be publicly accessible. If your audio is behind authentication (for example, a private S3 bucket), generate a pre-signed URL first. Pre-signed URLs are time-limited public URLs that grant temporary access to private resources.
 </Callout>
 
-## Comparison with file transcription
-
 The approach is the same as [Transcribe a file](/docs/integration/transcribe-file): you're sending audio bytes to `POST /v1/listen`. The difference is just where the bytes come from:
 
 | Approach | Source | When to use |
@@ -87,7 +87,7 @@ The approach is the same as [Transcribe a file](/docs/integration/transcribe-fil
 
 Both approaches use the same API endpoint, authentication, query parameters, and response format.
 
-You can customize the transcription with query parameters like `punctuate`, `diarize`, and `smart_format`. See the [Parameters reference](/docs/api-reference/parameters) for the full list.
+You can customize transcriptions with query parameters for [smart formatting](/docs/concepts/transcript-formatting/smart-formatting), [speaker diarization](/docs/concepts/speech-intelligence/speaker-diarization), [language detection](/docs/concepts/speech-intelligence/language-detection), and more. See the [Parameters reference](/docs/api-reference/parameters) for the full list.
 
 </Tab>
 <Tab value="Node.js">
@@ -135,7 +135,9 @@ Run it:
 node transcribe_url.js
 ```
 
-## Code walkthrough
+## How it works
+
+To transcribe from a URL, you follow three steps: download the audio, send it to the API, and extract the transcript from the response.
 
 1. **Download the audio.** `fetch()` retrieves the audio file from the URL. The response is read as an `ArrayBuffer` with `.arrayBuffer()`, which gives you the raw binary data. `fetch` follows redirects automatically, which is important for URLs from storage services that often redirect to a CDN.
 
@@ -147,8 +149,6 @@ node transcribe_url.js
 The URL must be publicly accessible. If your audio is behind authentication (for example, a private S3 bucket), generate a pre-signed URL first. Pre-signed URLs are time-limited public URLs that grant temporary access to private resources.
 </Callout>
 
-## Comparison with file transcription
-
 The approach is the same as [Transcribe a file](/docs/integration/transcribe-file): you're sending audio bytes to `POST /v1/listen`. The difference is just where the bytes come from:
 
 | Approach | Source | When to use |
@@ -158,17 +158,193 @@ The approach is the same as [Transcribe a file](/docs/integration/transcribe-fil
 
 Both approaches use the same API endpoint, authentication, query parameters, and response format.
 
-You can customize the transcription with query parameters like `punctuate`, `diarize`, and `smart_format`. See the [Parameters reference](/docs/api-reference/parameters) for the full list.
+You can customize transcriptions with query parameters for [smart formatting](/docs/concepts/transcript-formatting/smart-formatting), [speaker diarization](/docs/concepts/speech-intelligence/speaker-diarization), [language detection](/docs/concepts/speech-intelligence/language-detection), and more. See the [Parameters reference](/docs/api-reference/parameters) for the full list.
 
 </Tab>
 <Tab value="Go">
 
-Transcribe audio from a URL using Go.
+## Prerequisites
+
+- Go 1.21 or later
+- A publicly accessible URL pointing to an audio file in a supported format
+
+## Transcribe audio from a URL
+
+The following example downloads audio from a public URL and sends it to the Aldea API for transcription:
+
+```go title="transcribe_url.go"
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+)
+
+func main() {
+	apiKey := os.Getenv("ALDEA_API_KEY")
+	audioURL := "https://dpgr.am/spacewalk.wav"
+
+	// Download the audio file
+	fmt.Println("Downloading audio...")
+	audioResp, err := http.Get(audioURL)
+	if err != nil {
+		fmt.Println("Error downloading:", err)
+		return
+	}
+	defer audioResp.Body.Close()
+	audioData, _ := io.ReadAll(audioResp.Body)
+	fmt.Printf("Downloaded %d bytes\n", len(audioData))
+
+	// Send the audio to the Aldea API
+	fmt.Println("Transcribing...")
+	req, _ := http.NewRequest("POST", "https://api.aldea.ai/v1/listen", bytes.NewReader(audioData))
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != 200 {
+		fmt.Printf("Error %d: %s\n", resp.StatusCode, string(body))
+		return
+	}
+
+	var result struct {
+		Results struct {
+			Channels []struct {
+				Alternatives []struct {
+					Transcript string `json:"transcript"`
+				} `json:"alternatives"`
+			} `json:"channels"`
+		} `json:"results"`
+	}
+	json.Unmarshal(body, &result)
+	fmt.Printf("Transcript: %s\n", result.Results.Channels[0].Alternatives[0].Transcript)
+}
+```
+
+Run it:
+
+```bash
+go run transcribe_url.go
+```
+
+## How it works
+
+To transcribe from a URL, you follow three steps: download the audio, send it to the API, and extract the transcript from the response.
+
+1. **Download the audio.** `http.Get()` fetches the audio file from the URL. Go's HTTP client follows redirects automatically, which is important for URLs from storage services that often redirect to a CDN.
+
+2. **POST to `/v1/listen`.** The downloaded audio bytes are sent to the Aldea API in the request body. This is the same endpoint and format used in [Transcribe a file](/docs/integration/transcribe-file). The only difference is where the audio comes from.
+
+3. **Parse the response.** The response structure is identical to file transcription. See the [response structure in Transcribe a file](/docs/integration/transcribe-file) for full field descriptions.
+
+<Callout type="info">
+The URL must be publicly accessible. If your audio is behind authentication (for example, a private S3 bucket), generate a pre-signed URL first. Pre-signed URLs are time-limited public URLs that grant temporary access to private resources.
+</Callout>
+
+The approach is the same as [Transcribe a file](/docs/integration/transcribe-file): you're sending audio bytes to `POST /v1/listen`. The difference is just where the bytes come from:
+
+| Approach | Source | When to use |
+|----------|--------|-------------|
+| File | `os.ReadFile("audio.wav")` | Audio is on your local disk |
+| URL | `http.Get(url)` + `io.ReadAll` | Audio is hosted remotely |
+
+Both approaches use the same API endpoint, authentication, query parameters, and response format.
+
+You can customize transcriptions with query parameters for [smart formatting](/docs/concepts/transcript-formatting/smart-formatting), [speaker diarization](/docs/concepts/speech-intelligence/speaker-diarization), [language detection](/docs/concepts/speech-intelligence/language-detection), and more. See the [Parameters reference](/docs/api-reference/parameters) for the full list.
 
 </Tab>
 <Tab value="Rust">
 
-Transcribe audio from a URL using Rust.
+## Prerequisites
+
+- Rust 1.70 or later with `reqwest`, `tokio`, and `serde_json` in your `Cargo.toml` (see [Setup & installation](/docs/integration/setup))
+- A publicly accessible URL pointing to an audio file in a supported format
+
+## Transcribe audio from a URL
+
+The following example downloads audio from a public URL and sends it to the Aldea API for transcription:
+
+```rust title="transcribe_url.rs"
+use serde_json::Value;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key = std::env::var("ALDEA_API_KEY").expect("ALDEA_API_KEY not set");
+    let audio_url = "https://dpgr.am/spacewalk.wav";
+
+    // Download the audio file
+    println!("Downloading audio...");
+    let audio_data = reqwest::get(audio_url).await?.bytes().await?;
+    println!("Downloaded {} bytes", audio_data.len());
+
+    // Send the audio to the Aldea API
+    println!("Transcribing...");
+    let client = reqwest::Client::new();
+    let response = client
+        .post("https://api.aldea.ai/v1/listen")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .body(audio_data)
+        .send()
+        .await?;
+
+    let status = response.status();
+    let text = response.text().await?;
+
+    if !status.is_success() {
+        eprintln!("Error {}: {}", status, text);
+        return Ok(());
+    }
+
+    let json: Value = serde_json::from_str(&text)?;
+    let transcript = json["results"]["channels"][0]["alternatives"][0]["transcript"]
+        .as_str()
+        .unwrap_or("");
+    println!("Transcript: {}", transcript);
+
+    Ok(())
+}
+```
+
+Run it:
+
+```bash
+cargo run --bin transcribe_url
+```
+
+## How it works
+
+To transcribe from a URL, you follow three steps: download the audio, send it to the API, and extract the transcript from the response.
+
+1. **Download the audio.** `reqwest::get(url).await?.bytes().await?` fetches the audio file into memory. `reqwest` follows redirects automatically, which is important for URLs from storage services that often redirect to a CDN.
+
+2. **POST to `/v1/listen`.** The downloaded audio bytes are sent to the Aldea API in the request body. This is the same endpoint and format used in [Transcribe a file](/docs/integration/transcribe-file). The only difference is where the audio comes from.
+
+3. **Parse the response.** The response structure is identical to file transcription. See the [response structure in Transcribe a file](/docs/integration/transcribe-file) for full field descriptions.
+
+<Callout type="info">
+The URL must be publicly accessible. If your audio is behind authentication (for example, a private S3 bucket), generate a pre-signed URL first. Pre-signed URLs are time-limited public URLs that grant temporary access to private resources.
+</Callout>
+
+The approach is the same as [Transcribe a file](/docs/integration/transcribe-file): you're sending audio bytes to `POST /v1/listen`. The difference is just where the bytes come from:
+
+| Approach | Source | When to use |
+|----------|--------|-------------|
+| File | `tokio::fs::read("audio.wav")` | Audio is on your local disk |
+| URL | `reqwest::get(url).await?.bytes()` | Audio is hosted remotely |
+
+Both approaches use the same API endpoint, authentication, query parameters, and response format.
+
+You can customize transcriptions with query parameters for [smart formatting](/docs/concepts/transcript-formatting/smart-formatting), [speaker diarization](/docs/concepts/speech-intelligence/speaker-diarization), [language detection](/docs/concepts/speech-intelligence/language-detection), and more. See the [Parameters reference](/docs/api-reference/parameters) for the full list.
 
 </Tab>
 </Tabs>

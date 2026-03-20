@@ -59,7 +59,9 @@ Run it:
 python transcribe_file.py
 ```
 
-## Code walkthrough
+## How it works
+
+To transcribe a file, you follow three steps: read the audio file, send it to the API, and extract the transcript from the response.
 
 1. **Read the file.** `open("audio.wav", "rb").read()` loads the entire file into memory as raw bytes. The API detects the audio format automatically from the file contents, so you don't need to specify a content type.
 
@@ -79,7 +81,7 @@ The API returns a JSON response with the following key fields:
 | `alternatives[].confidence` | float | Confidence score from 0.0 to 1.0. |
 | `alternatives[].words` | array | Per-word details including `word`, `start`, `end`, and `confidence`. |
 
-Example response (abbreviated):
+Example response:
 
 ```json
 {
@@ -102,30 +104,9 @@ Example response (abbreviated):
 }
 ```
 
-For the full list of available parameters, see the [Parameters reference](/docs/api-reference/parameters).
+You can customize transcriptions with query parameters for [smart formatting](/docs/concepts/transcript-formatting/smart-formatting), [speaker diarization](/docs/concepts/speech-intelligence/speaker-diarization), [language detection](/docs/concepts/speech-intelligence/language-detection), and more. See the [Parameters reference](/docs/api-reference/parameters) for the full list.
 
-## Handle errors
-
-Check the HTTP status code before parsing the response:
-
-```python
-if response.status_code == 200:
-    transcript = (
-        result.get("results", {})
-        .get("channels", [{}])[0]
-        .get("alternatives", [{}])[0]
-        .get("transcript", "")
-    )
-    print(transcript)
-elif response.status_code == 401:
-    print("Authentication failed. Check your API key.")
-elif response.status_code == 400:
-    print(f"Bad request: {result}")
-else:
-    print(f"Error {response.status_code}: {result}")
-```
-
-For a complete list of error codes, see [Error codes](/docs/api-reference/error-codes).
+If the request fails, the API returns an HTTP error status with a description. See [Error codes](/docs/api-reference/error-codes) for the full list and troubleshooting guidance.
 
 </Tab>
 <Tab value="Node.js">
@@ -167,7 +148,9 @@ Run it:
 node transcribe_file.js
 ```
 
-## Code walkthrough
+## How it works
+
+To transcribe a file, you follow three steps: read the audio file, send it to the API, and extract the transcript from the response.
 
 1. **Read the file.** `readFileSync("audio.wav")` loads the entire file into memory as a `Buffer`. The API detects the audio format automatically from the file contents, so you don't need to specify a content type.
 
@@ -187,7 +170,7 @@ The API returns a JSON response with the following key fields:
 | `alternatives[].confidence` | float | Confidence score from 0.0 to 1.0. |
 | `alternatives[].words` | array | Per-word details including `word`, `start`, `end`, and `confidence`. |
 
-Example response (abbreviated):
+Example response:
 
 ```json
 {
@@ -210,36 +193,235 @@ Example response (abbreviated):
 }
 ```
 
-For the full list of available parameters, see the [Parameters reference](/docs/api-reference/parameters).
+You can customize transcriptions with query parameters for [smart formatting](/docs/concepts/transcript-formatting/smart-formatting), [speaker diarization](/docs/concepts/speech-intelligence/speaker-diarization), [language detection](/docs/concepts/speech-intelligence/language-detection), and more. See the [Parameters reference](/docs/api-reference/parameters) for the full list.
 
-## Handle errors
-
-Check the HTTP status code before parsing the response:
-
-```javascript
-if (response.ok) {
-  const transcript = result?.results?.channels?.[0]?.alternatives?.[0]?.transcript ?? "";
-  console.log(transcript);
-} else if (response.status === 401) {
-  console.error("Authentication failed. Check your API key.");
-} else if (response.status === 400) {
-  console.error("Bad request:", result);
-} else {
-  console.error(`Error ${response.status}:`, result);
-}
-```
-
-For a complete list of error codes, see [Error codes](/docs/api-reference/error-codes).
+If the request fails, the API returns an HTTP error status with a description. See [Error codes](/docs/api-reference/error-codes) for the full list and troubleshooting guidance.
 
 </Tab>
 <Tab value="Go">
 
-Transcribe a local audio file using Go.
+## Prerequisites
+
+- Go 1.21 or later
+- A local audio file in a supported format (MP3, WAV, FLAC, etc.)
+
+## Transcribe a local file
+
+The following example reads an audio file from disk and sends it to the Aldea API for transcription:
+
+```go title="transcribe_file.go"
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+)
+
+func main() {
+	apiKey := os.Getenv("ALDEA_API_KEY")
+
+	// Read the audio file as raw bytes
+	audioData, err := os.ReadFile("audio.wav")
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+		return
+	}
+
+	// Send the audio to the Aldea API
+	req, _ := http.NewRequest("POST", "https://api.aldea.ai/v1/listen", bytes.NewReader(audioData))
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != 200 {
+		fmt.Printf("Error %d: %s\n", resp.StatusCode, string(body))
+		return
+	}
+
+	// Extract and print the transcript
+	var result struct {
+		Results struct {
+			Channels []struct {
+				Alternatives []struct {
+					Transcript string `json:"transcript"`
+				} `json:"alternatives"`
+			} `json:"channels"`
+		} `json:"results"`
+	}
+	json.Unmarshal(body, &result)
+	fmt.Println(result.Results.Channels[0].Alternatives[0].Transcript)
+}
+```
+
+Run it:
+
+```bash
+go run transcribe_file.go
+```
+
+## How it works
+
+To transcribe a file, you follow three steps: read the audio file, send it to the API, and extract the transcript from the response.
+
+1. **Read the file.** `os.ReadFile("audio.wav")` loads the entire file into memory as a byte slice. The API detects the audio format automatically from the file contents, so you don't need to set a content type.
+
+2. **POST to `/v1/listen`.** `http.NewRequest` builds a POST request with the audio bytes as the body. The `Authorization` header authenticates the request with your API key using the `Bearer` scheme.
+
+3. **Parse the response.** The response body is read with `io.ReadAll` and unmarshalled into a struct that mirrors the JSON structure. Go's typed struct fields give you compile-time safety when accessing `Results.Channels[0].Alternatives[0].Transcript`.
+
+## Response structure
+
+The API returns a JSON response with the following key fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `results.channels` | array | One entry per audio channel. Mono audio has one channel. |
+| `channels[].alternatives` | array | Ranked transcript alternatives. The first alternative (`[0]`) has the highest confidence. |
+| `alternatives[].transcript` | string | The full transcript text for this alternative. |
+| `alternatives[].confidence` | float | Confidence score from 0.0 to 1.0. |
+| `alternatives[].words` | array | Per-word details including `word`, `start`, `end`, and `confidence`. |
+
+Example response:
+
+```json
+{
+  "results": {
+    "channels": [
+      {
+        "alternatives": [
+          {
+            "transcript": "Houston we've had a problem",
+            "confidence": 0.98,
+            "words": [
+              { "word": "houston", "start": 0.08, "end": 0.56, "confidence": 0.99 },
+              { "word": "we've", "start": 0.56, "end": 0.72, "confidence": 0.97 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+You can customize transcriptions with query parameters for [smart formatting](/docs/concepts/transcript-formatting/smart-formatting), [speaker diarization](/docs/concepts/speech-intelligence/speaker-diarization), [language detection](/docs/concepts/speech-intelligence/language-detection), and more. See the [Parameters reference](/docs/api-reference/parameters) for the full list.
+
+If the request fails, the API returns an HTTP error status with a description. See [Error codes](/docs/api-reference/error-codes) for the full list and troubleshooting guidance.
 
 </Tab>
 <Tab value="Rust">
 
-Transcribe a local audio file using Rust.
+## Prerequisites
+
+- Rust 1.70 or later with `reqwest`, `tokio`, and `serde_json` in your `Cargo.toml` (see [Setup & installation](/docs/integration/setup))
+- A local audio file in a supported format (MP3, WAV, FLAC, etc.)
+
+## Transcribe a local file
+
+The following example reads an audio file from disk and sends it to the Aldea API for transcription:
+
+```rust title="transcribe_file.rs"
+use serde_json::Value;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key = std::env::var("ALDEA_API_KEY").expect("ALDEA_API_KEY not set");
+
+    // Read the audio file as raw bytes
+    let audio_data = tokio::fs::read("audio.wav").await?;
+
+    // Send the audio to the Aldea API
+    let client = reqwest::Client::new();
+    let response = client
+        .post("https://api.aldea.ai/v1/listen")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .body(audio_data)
+        .send()
+        .await?;
+
+    let status = response.status();
+    let text = response.text().await?;
+
+    if !status.is_success() {
+        eprintln!("Error {}: {}", status, text);
+        return Ok(());
+    }
+
+    // Extract and print the transcript
+    let json: Value = serde_json::from_str(&text)?;
+    let transcript = json["results"]["channels"][0]["alternatives"][0]["transcript"]
+        .as_str()
+        .unwrap_or("");
+    println!("{}", transcript);
+
+    Ok(())
+}
+```
+
+Run it:
+
+```bash
+cargo run --bin transcribe_file
+```
+
+## How it works
+
+To transcribe a file, you follow three steps: read the audio file, send it to the API, and extract the transcript from the response.
+
+1. **Read the file.** `tokio::fs::read("audio.wav")` loads the entire file into a `Vec<u8>`. The API detects the audio format automatically from the file contents, so you don't need to set a content type.
+
+2. **POST to `/v1/listen`.** `reqwest::Client::new().post(url)` builds a POST request. The `.header("Authorization", ...)` call adds Bearer authentication, and `.body(audio_data)` attaches the raw audio bytes.
+
+3. **Parse the response.** The response body is deserialized into a `serde_json::Value` and indexed to extract the transcript. The `as_str().unwrap_or("")` chain handles the case where a field is missing.
+
+## Response structure
+
+The API returns a JSON response with the following key fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `results.channels` | array | One entry per audio channel. Mono audio has one channel. |
+| `channels[].alternatives` | array | Ranked transcript alternatives. The first alternative (`[0]`) has the highest confidence. |
+| `alternatives[].transcript` | string | The full transcript text for this alternative. |
+| `alternatives[].confidence` | float | Confidence score from 0.0 to 1.0. |
+| `alternatives[].words` | array | Per-word details including `word`, `start`, `end`, and `confidence`. |
+
+Example response:
+
+```json
+{
+  "results": {
+    "channels": [
+      {
+        "alternatives": [
+          {
+            "transcript": "Houston we've had a problem",
+            "confidence": 0.98,
+            "words": [
+              { "word": "houston", "start": 0.08, "end": 0.56, "confidence": 0.99 },
+              { "word": "we've", "start": 0.56, "end": 0.72, "confidence": 0.97 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+You can customize transcriptions with query parameters for [smart formatting](/docs/concepts/transcript-formatting/smart-formatting), [speaker diarization](/docs/concepts/speech-intelligence/speaker-diarization), [language detection](/docs/concepts/speech-intelligence/language-detection), and more. See the [Parameters reference](/docs/api-reference/parameters) for the full list.
+
+If the request fails, the API returns an HTTP error status with a description. See [Error codes](/docs/api-reference/error-codes) for the full list and troubleshooting guidance.
 
 </Tab>
 </Tabs>
