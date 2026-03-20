@@ -129,82 +129,133 @@ asyncio.run(stream_live())
 
 The only differences from the file example are the audio source (`httpx.stream` instead of `open`) and the encoding parameter (`mp3` instead of `linear16`).
 
-## Understanding streaming messages
-
-The server sends several types of JSON messages during a streaming session:
-
-| Message type | Description |
-|-------------|-------------|
-| `Results` | Contains transcript data. Check `is_final` to distinguish interim from final results. |
-| `UtteranceEnd` | Signals that the speaker finished a turn. Requires [`utterance_end_ms`](/docs/concepts/streaming-controls/utterance-detection). |
-| `SpeechStarted` | Indicates that speech was detected after a period of silence. See [VAD events](/docs/concepts/streaming-controls/vad-events). |
-| `Metadata` | Connection metadata sent at the start of the session. |
-
-Key fields in a `Results` message:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `type` | string | Always `"Results"`. |
-| `is_final` | boolean | `true` for finalized segments, `false` for interim results that may change. |
-| `speech_final` | boolean | `true` when endpointing determines the speaker has paused. See [Endpointing](/docs/concepts/streaming-controls/endpointing). |
-| `channel.alternatives[0].transcript` | string | The transcript text. |
-| `channel.alternatives[0].words` | array | Per-word details with `word`, `start`, `end`, and `confidence`. |
-
-Example `Results` message:
-
-```json
-{
-  "type": "Results",
-  "is_final": true,
-  "speech_final": true,
-  "channel": {
-    "alternatives": [
-      {
-        "transcript": "Houston we've had a problem",
-        "confidence": 0.98,
-        "words": [
-          { "word": "houston", "start": 0.08, "end": 0.56, "confidence": 0.99 },
-          { "word": "we've", "start": 0.56, "end": 0.72, "confidence": 0.97 }
-        ]
-      }
-    ]
-  }
-}
-```
-
-## Streaming query parameters
-
-Add these parameters to the WebSocket URL to control streaming behavior:
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `encoding` | string | Audio encoding: `linear16`, `mp3`, `opus`, `flac`, `aac`, etc. Required for raw audio. |
-| `sample_rate` | integer | Sample rate in Hz (e.g., `16000`, `44100`). Required for raw audio. |
-| `channels` | integer | Number of audio channels. Defaults to `1`. |
-| `utterance_end_ms` | integer | Silence threshold in ms to trigger `UtteranceEnd`. See [Utterance detection](/docs/concepts/streaming-controls/utterance-detection). |
-| `interim_results` | boolean | Whether to receive interim (non-final) results. Defaults to `true`. |
-| `punctuate` | boolean | Add punctuation to the transcript. |
-| `smart_format` | boolean | Apply smart formatting for numbers, dates, etc. |
-
-Example with multiple parameters:
-
-```
-wss://api.aldea.ai/v1/listen?encoding=linear16&sample_rate=16000&punctuate=true&utterance_end_ms=1000
-```
-
-For the full list, see the [Parameters reference](/docs/api-reference/parameters).
-
-## Next steps
-
-- [Utterance detection](/docs/concepts/streaming-controls/utterance-detection) - detect when a speaker finishes a turn
-- [Endpointing](/docs/concepts/streaming-controls/endpointing) - fine-tune when transcript segments are finalized
-- [VAD events](/docs/concepts/streaming-controls/vad-events) - detect when speech starts and stops
-- [Transcribe a file](/docs/integration/transcribe-file) - transcribe pre-recorded audio instead
+For details on streaming message types, response fields, and query parameters, see [Streaming controls](/docs/concepts/streaming-controls) and the [Parameters reference](/docs/api-reference/parameters).
 
 </Tab>
 <Tab value="Node.js">
 
-Stream audio for real-time transcription using Node.js.
+## Prerequisites
+
+- Node.js 18 or later
+- `ws` installed (see [Setup & installation](/docs/integration/setup))
+- An audio source to stream (a file, microphone, or network stream)
+
+## Stream audio from a file
+
+The following example opens a WebSocket connection to the Aldea API, streams a local audio file in chunks, and prints finalized transcripts as they arrive:
+
+```javascript title="stream.js"
+import { createReadStream } from "node:fs";
+import WebSocket from "ws";
+
+const ALDEA_API_KEY = process.env.ALDEA_API_KEY;
+const AUDIO_FILE = "audio.wav";
+const WS_URL = "wss://api.aldea.ai/v1/listen?encoding=linear16&sample_rate=16000";
+
+const ws = new WebSocket(WS_URL, {
+  headers: { "Authorization": `Bearer ${ALDEA_API_KEY}` },
+});
+
+ws.on("open", () => {
+  console.log("Connected, streaming audio...");
+
+  const stream = createReadStream(AUDIO_FILE, { highWaterMark: 4096 });
+
+  stream.on("data", (chunk) => {
+    ws.send(chunk);
+  });
+
+  stream.on("end", () => {
+    // Signal the server that no more audio is coming
+    ws.send(JSON.stringify({ type: "CloseStream" }));
+  });
+});
+
+ws.on("message", (data) => {
+  const message = JSON.parse(data);
+  if (message.type === "Results" && message.is_final) {
+    const transcript = message.channel?.alternatives?.[0]?.transcript;
+    if (transcript) {
+      console.log(transcript);
+    }
+  }
+});
+
+ws.on("error", (err) => {
+  console.error("WebSocket error:", err.message);
+});
+
+ws.on("close", () => {
+  console.log("Connection closed.");
+});
+```
+
+Run it:
+
+```bash
+node stream.js
+```
+
+## Code walkthrough
+
+1. **Connect with authentication.** `new WebSocket(url, { headers })` opens a WebSocket to `wss://api.aldea.ai/v1/listen`. The `Authorization: Bearer` header authenticates the connection during the handshake. The query parameters `encoding=linear16` and `sample_rate=16000` tell the API how to decode the incoming audio. Adjust these to match your audio format.
+
+2. **Send audio frames.** `createReadStream` reads the file in 4 KB chunks (`highWaterMark: 4096`). Each chunk is sent as a binary WebSocket frame with `ws.send()`. The chunk size isn't critical; 4096 bytes is a common default that balances latency and overhead. In production, you'd read from a microphone or network stream instead of a file.
+
+3. **Receive transcript messages.** The `message` event handler parses each incoming JSON message. It filters for `Results` messages where `is_final` is `true`. These are finalized transcript segments. Interim results (where `is_final` is `false`) contain partial transcripts that may change as more audio arrives.
+
+4. **Close the stream.** Sending `{"type": "CloseStream"}` tells the server no more audio is coming. The server finishes processing any remaining audio, sends final results, and closes the connection.
+
+<Callout type="warn">
+The `encoding` and `sample_rate` parameters must match your audio format. If they don't, the API will attempt to decode the audio incorrectly and you'll get garbled or empty transcripts. Common combinations: `linear16` at `16000` Hz for WAV, `mp3` for MP3 files, `opus` for Opus-encoded audio.
+</Callout>
+
+## Stream from a live source
+
+To stream from a live audio source instead of a file, replace the file read logic. The following example streams from an internet radio station:
+
+```javascript title="stream_live.js"
+import WebSocket from "ws";
+
+const ALDEA_API_KEY = process.env.ALDEA_API_KEY;
+const STREAM_URL = "http://icecast.omroep.nl/radio1-bb-mp3";
+const WS_URL = "wss://api.aldea.ai/v1/listen?encoding=mp3";
+
+const ws = new WebSocket(WS_URL, {
+  headers: { "Authorization": `Bearer ${ALDEA_API_KEY}` },
+});
+
+ws.on("open", async () => {
+  console.log("Connected, streaming live audio...");
+
+  const response = await fetch(STREAM_URL);
+  const reader = response.body.getReader();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    ws.send(value);
+  }
+});
+
+ws.on("message", (data) => {
+  const message = JSON.parse(data);
+  if (message.type === "Results" && message.is_final) {
+    const transcript = message.channel?.alternatives?.[0]?.transcript;
+    if (transcript) {
+      console.log(transcript);
+    }
+  }
+});
+
+ws.on("error", (err) => {
+  console.error("WebSocket error:", err.message);
+});
+```
+
+The only differences from the file example are the audio source (`fetch` stream instead of `createReadStream`) and the encoding parameter (`mp3` instead of `linear16`).
+
+For details on streaming message types, response fields, and query parameters, see [Streaming controls](/docs/concepts/streaming-controls) and the [Parameters reference](/docs/api-reference/parameters).
 
 </Tab>
 <Tab value="Go">
@@ -218,3 +269,10 @@ Stream audio for real-time transcription using Rust.
 
 </Tab>
 </Tabs>
+
+## Next steps
+
+- [Utterance detection](/docs/concepts/streaming-controls/utterance-detection) - detect when a speaker finishes a turn
+- [Endpointing](/docs/concepts/streaming-controls/endpointing) - fine-tune when transcript segments are finalized
+- [VAD events](/docs/concepts/streaming-controls/vad-events) - detect when speech starts and stops
+- [Transcribe a file](/docs/integration/transcribe-file) - transcribe pre-recorded audio instead
