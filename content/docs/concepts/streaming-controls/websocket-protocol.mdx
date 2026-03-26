@@ -32,7 +32,7 @@ After a successful handshake, the server returns `101 Switching Protocols`.
 
 Your client can send two types of messages: binary audio frames and JSON control messages.
 
-**Binary audio frames**
+### Binary audio frames
 
 Send audio data as binary WebSocket frames. The API supports the following formats:
 
@@ -41,7 +41,7 @@ Send audio data as binary WebSocket frames. The API supports the following forma
 
 There's no required chunk size. You can send audio frames as they become available such as when your microphone produces them. The server buffers and processes audio continuously.
 
-**Control messages**
+### Control messages
 
 You send JSON control messages to manage the stream:
 
@@ -55,9 +55,9 @@ You send JSON control messages to manage the stream:
 
 The server sends the following JSON message types:
 
-**Metadata**
+### Metadata
 
-The server sends medatata once when the connection opens. It contains session information:
+The server sends metadata once when the connection opens. It contains session information:
 
 ```json
 {
@@ -74,7 +74,7 @@ The server sends medatata once when the connection opens. It contains session in
 }
 ```
 
-**Results**
+### Results
 
 The server sends transcript data continuously as audio is processed:
 
@@ -106,7 +106,7 @@ The server sends transcript data continuously as audio is processed:
 | `words` | Array of `[word, start_ms, end_ms]`. Timestamps are in milliseconds |
 | `confidence` | Confidence score (0–1) |
 
-**SpeechStarted**
+### SpeechStarted
 
 When the server detects voice activity, it sends `SpeechStarted` if [`vad_events=true`](/docs/concepts/streaming-controls/vad-events) is already configured:
 
@@ -118,7 +118,7 @@ When the server detects voice activity, it sends `SpeechStarted` if [`vad_events
 }
 ```
 
-**UtteranceEnd**
+### UtteranceEnd
 
 When a silence threshold is reached, the server sends `UtteranceEnd`. It requires you to have the [`utterance_end_ms`](/docs/concepts/streaming-controls/utterance-detection) parameter and word timestamps set:
 
@@ -151,4 +151,3 @@ You can append these parameters to the WebSocket URL to configure the stream:
 - [Interim results](/docs/concepts/streaming-controls/interim-results) - display partial transcripts in real time
 - [Endpointing](/docs/concepts/streaming-controls/endpointing) - control sentence finalization timing
 - [Streaming quickstart](/docs/getting-started/quickstart/streaming) - get started with your first streaming integration
-- [API reference](/docs/api-reference) - complete API documentation

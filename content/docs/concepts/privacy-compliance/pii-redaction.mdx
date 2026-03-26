@@ -5,9 +5,9 @@ description: Automatically remove personally identifiable information from trans
 
 PII redaction automatically removes personally identifiable information (PII) from transcripts before the results reach your application. Sensitive data is replaced in both the transcript text and the word-level output, so your application never sees the original values.
 
-## Why pII redaction matters
+## Why PII redaction matters
 
-People say sensitive things during natural conversations. Fro example, in a customer support call, a caller might read out their credit card number. In a medical consultation, a patient might state their Social Security number or home address. In a legal deposition, witnesses might name individuals who should remain anonymous.
+People say sensitive things during natural conversations. For example, in a customer support call, a caller might read out their credit card number. In a medical consultation, a patient might state their Social Security number or home address. In a legal deposition, witnesses might name individuals who should remain anonymous.
 
 Unlike typed input where you can mask a password field or validate a form, spoken language is unstructured. Sensitive data can appear anywhere in a sentence, without warning. PII redaction solves this by scanning the transcript as it's produced and removing or masking sensitive content before it reaches your application, logs, or storage.
 
@@ -46,10 +46,7 @@ The following table summarizes values you can redact during transcription:
 | `numbers` | Dates, phone numbers, Social Security numbers, credit card numbers |
 | `true` | All PII types combined |
 
-The `redact` parameter is repeatable in that you can combine multiple types in a single request. For example, `?redact=pii&redact=pci`).
-
-## Redaction mode
-
+The `redact` parameter is repeatable in that you can combine multiple types in a single request. For example, `?redact=pii&redact=pci`.
 
 ## Control how redacted content appears
 
@@ -72,4 +69,3 @@ When applying redaction, choose the mode that best fits your use case. `replace`
 
 - [Compliance](/docs/concepts/privacy-compliance/compliance)
 - [Streaming quickstart](/docs/getting-started/quickstart/streaming)
-- [API reference](/docs/api-reference)
