@@ -22,9 +22,9 @@ To process transcription asynchronously, use the `callback` query parameter. The
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `callback` | string | — | URL to send results to when transcription completes |
+| `callback` | string | - | URL to send results to when transcription completes |
 | `callback_method` | string | `POST` | HTTP method used for the callback request |
-| `metadata` | string | — | JSON string passed through to the callback payload |
+| `metadata` | string | - | JSON string passed through to the callback payload |
 
 ## Example
 
@@ -48,4 +48,3 @@ The `metadata` value is a URL-encoded JSON string (e.g., `{"job_id":"123"}`) tha
 
 - [Transcription modes overview](/docs/concepts/transcription-modes)
 - [Pre-recorded quickstart](/docs/getting-started/quickstart/pre-recorded)
-- [API reference](/docs/api-reference)
