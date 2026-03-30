@@ -51,39 +51,45 @@ curl -X POST "https://api.subquadratic.ai/v1/listen" \
 <Tab value="Python">
 
 ```python
-from deepgram import DeepgramClient, DeepgramClientEnvironment
+import requests
 
-config = DeepgramClientEnvironment(
-    base="https://api.subquadratic.ai",
-    production="wss://api.subquadratic.ai",
-    agent="wss://api.subquadratic.ai"
-)
-
-client = DeepgramClient(api_key="YOUR_SUBQ_API_KEY", environment=config)
+API_KEY = "YOUR_SUBQ_API_KEY"
 
 with open("audio.wav", "rb") as f:
-    response = client.listen.v1.media.transcribe_file(request=f.read())
-    print(response.results.channels[0].alternatives[0].transcript)
+    response = requests.post(
+        "https://api.subquadratic.ai/v1/listen",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "timestamps": "true",
+        },
+        data=f.read(),
+    )
+
+result = response.json()
+print(result["results"]["channels"][0]["alternatives"][0]["transcript"])
 ```
 
 </Tab>
 <Tab value="Node.js">
 
 ```javascript
-import { createClient } from "@deepgram/sdk";
-import fs from "fs";
+import { readFileSync } from "fs";
 
 const client = createClient({
   accessToken: "YOUR_SUBQ_API_KEY",
   global: { url: "https://api.subquadratic.ai" }
 });
 
-const response = await client.listen.prerecorded.transcribeFile(
-  fs.createReadStream("audio.wav"),
-  { mimetype: "audio/wav" }
-);
+const response = await fetch("https://api.subquadratic.ai/v1/listen", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${API_KEY}`,
+    timestamps: "true",
+  },
+  body: readFileSync("audio.wav"),
+});
 
-const result = response?.result ?? response;
+const result = await response.json();
 console.log(result.results.channels[0].alternatives[0].transcript);
 ```
 
@@ -125,12 +131,12 @@ The following endpoints are aliases and function identically to `/v1/listen`:
 
 ## Real-time streaming
 
-Real-time streaming transcription processes an audio as it is captured and returns results continuously. Audio is streamed to SubQ over a persistent WebSocket connection and transcript segments returned incrementally  as speech is detected. 
+Real-time streaming transcription processes audio as it is captured and returns results continuously. Audio is streamed to SubQ over a persistent WebSocket connection and transcript segments returned incrementally as speech is detected. 
 
 SubQ emits two types of results during real-time streaming transcription:
 
-- Interim results: This is partial, low-latency hypotheses that update as more audio context becomes available. Interim results are useful when displaying live captions but they can change as the utterances progresses.
-- Final results: The stable transcript segment returned once SubQ determines that an utterance is complete. These final results do not change after delivery. 
+- **Interim results:** These are partial, low-latency hypotheses that update as more audio context becomes available. Interim results are useful when displaying live captions but they can change as the utterance progresses.
+- **Final results:** The stable transcript segment returned once SubQ determines that an utterance is complete. These final results do not change after delivery. 
 
 Real-time streaming transcription is ideal for the following use cases:
 
