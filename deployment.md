@@ -1,4 +1,4 @@
-# Deployment Guide
+git pull# Deployment Guide
 
 This guide will walk you through deploying this Next.js documentation site to Cloudflare Workers using OpenNext.
 
